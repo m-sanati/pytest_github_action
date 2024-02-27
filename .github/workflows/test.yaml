@@ -1,0 +1,39 @@
+name: pytest
+on:
+  workflow_call:
+    inputs:
+      src-folder:
+        type: string
+
+jobs:
+  main:
+      steps:
+      - uses: actions/checkout@v2
+
+      - name: Install dependencies
+        run: |
+          python3 -m venv ./venv
+          ./venv/bin/python3 -m pip install wheel
+          ./venv/bin/python3 -m pip install -e .[test] --find-links=https://build.zattoo.com/pypi
+      - name: Run pytest
+        run: |
+          ./venv/bin/python3 -m pytest --cov=${{ inputs.src-folder }} tests/ | tee pytest.log
+      - uses: actions/upload-artifact@v2
+        with:
+          name: pytest
+          path: pytest.log
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Check results
+        run: |
+          export FAILED_COUNT=$(tail -n 1 pytest.log | sed -n -e 's/.*\([0-9]\+\) failed.*/\1/p' | tee >(read || echo 0))
+          echo $FAILED_COUNT
+          echo "FAILED_COUNT=$FAILED_COUNT" >> $GITHUB_ENV
+      - name: Abort due failed tests
+        if: ${{ fromJSON(env.FAILED_COUNT) > 0 }}
+        uses: actions/github-script@v5
+        with:
+          script: |
+            const { FAILED_COUNT } = process.env
+            core.setFailed(`${FAILED_COUNT} tests failed`)
