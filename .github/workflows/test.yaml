@@ -1,37 +1,8 @@
 name: test
-
-on:
-  push:
-    pull_request:
+on: [push]
 
 jobs:
-  run-tests:
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [macos-latest]
-        python-version:
-          - "3.9"
-          - "pypy-3.9"
-
-    name: Test
-    runs-on: ${{ matrix.os }}
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{ matrix.python-version }}
-
-      - name: Install dependencies
-        run: |
-          python3 -m venv ./venv
-          ./venv/bin/python3 -m pip install wheel
-          ./venv/bin/python3 -m pip install pytest
-
-      - name: Run tests
-        run: |
-          ./venv/bin/python3 -m pytest tests/ | tee pytest.log
+  pytest:
+    uses: m-sanati/main_github_action/.github/workflows/test.yaml@main
+    with:
+      src-folder: pytest_github_action
